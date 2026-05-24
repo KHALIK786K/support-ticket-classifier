@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ticketml-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./models:/app/models:ro
+    networks:
+      - ticketml-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: ticketml-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: ticketml
+      MYSQL_USER: ticketml
+      MYSQL_PASSWORD: ticketml
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpw"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ticketml-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ticketml-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ticketml-net
+
+volumes:
+  mysql_data:
+
+networks:
+  ticketml-net:
+    driver: bridge

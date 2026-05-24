@@ -1,0 +1,44 @@
+{
+  "samples": [
+    {
+      "subject": "Refund not received",
+      "body": "Hi team, I cancelled my subscription on June 3rd but the refund still hasn't hit my account. Order #A-2231.",
+      "expected_category": "Billing"
+    },
+    {
+      "subject": "Unable to login",
+      "body": "I am getting a 500 server error every time I try to log in since this morning. Please help.",
+      "expected_category": "Technical"
+    },
+    {
+      "subject": "Payment failed",
+      "body": "My credit card got charged Rs.9999 but the order page says payment failed. Please verify.",
+      "expected_category": "Billing"
+    },
+    {
+      "subject": "Salary slip missing",
+      "body": "I cannot find my May salary slip on the HR portal under the Documents section.",
+      "expected_category": "HR"
+    },
+    {
+      "subject": "Tax invoice required",
+      "body": "Please share the GST invoice for order A-1198 — I need it for company expense filing.",
+      "expected_category": "Finance"
+    },
+    {
+      "subject": "Cannot reset password",
+      "body": "The password reset email never arrives even after multiple attempts. My account email is correct.",
+      "expected_category": "Account"
+    },
+    {
+      "subject": "Webhook not delivering",
+      "body": "Our configured webhook endpoint has not received any events since 9 AM IST. Please check.",
+      "expected_category": "Technical"
+    },
+    {
+      "subject": "Provident fund balance",
+      "body": "My EPF balance has not been updated for the last quarter on the employee portal.",
+      "expected_category": "HR"
+    }
+  ]
+}

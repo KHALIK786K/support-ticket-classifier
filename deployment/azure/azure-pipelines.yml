@@ -1,0 +1,98 @@
+# Azure DevOps pipeline — alternative to the GitHub Actions workflow under .github/workflows.
+# Pick one of the two; the team standardised on GitHub Actions, this file is kept so the
+# project can be onboarded into an Azure DevOps tenant without rewriting the pipeline.
+
+trigger:
+  branches:
+    include: [main]
+  paths:
+    exclude: [docs/*, README.md, '*.md']
+
+pr:
+  branches:
+    include: [main]
+
+variables:
+  - group: ticketml-prod                    # contains ACR_NAME, AKS_RG, AKS_CLUSTER, IMAGE_REPO
+  - name:  imageTag
+    value: $(Build.BuildId)
+  - name:  pythonVersion
+    value: '3.11'
+
+stages:
+  # ------------------------------------------------------------------ TEST
+  - stage: Test
+    displayName: Lint & test
+    jobs:
+      - job: pytest
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - task: UsePythonVersion@0
+            inputs: { versionSpec: $(pythonVersion) }
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              pip install pytest pytest-cov ruff mypy
+            displayName: Install deps
+          - script: ruff check app tests
+            displayName: Lint
+          - script: mypy app
+            displayName: Type-check
+            continueOnError: true
+          - script: pytest --cov=app --cov-report=xml --junitxml=junit.xml
+            displayName: Unit tests
+            env:
+              JWT_SECRET_KEY: test-secret
+              MYSQL_URL:      sqlite:///./test.db
+          - task: PublishTestResults@2
+            inputs: { testResultsFiles: junit.xml }
+          - task: PublishCodeCoverageResults@2
+            inputs: { summaryFileLocation: coverage.xml }
+
+  # ----------------------------------------------------------------- BUILD
+  - stage: Build
+    displayName: Build & push image
+    dependsOn: Test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: docker
+        pool: { vmImage: ubuntu-latest }
+        steps:
+          - task: Docker@2
+            displayName: Login to ACR
+            inputs:
+              command:        login
+              containerRegistry: ticketml-acr
+          - task: Docker@2
+            displayName: Build & push
+            inputs:
+              command:        buildAndPush
+              repository:     $(IMAGE_REPO)
+              dockerfile:     Dockerfile
+              tags: |
+                $(imageTag)
+                latest
+
+  # ---------------------------------------------------------------- DEPLOY
+  - stage: Deploy
+    displayName: Roll out to AKS
+    dependsOn: Build
+    jobs:
+      - deployment: aks
+        environment: production
+        pool: { vmImage: ubuntu-latest }
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: kubectl set image
+                  inputs:
+                    azureSubscription: ticketml-sp
+                    scriptType:        bash
+                    scriptLocation:    inlineScript
+                    inlineScript: |
+                      az aks get-credentials -g $(AKS_RG) -n $(AKS_CLUSTER) --overwrite-existing
+                      kubectl -n ticketml set image deployment/ticket-classifier \
+                        api=$(ACR_NAME).azurecr.io/$(IMAGE_REPO):$(imageTag)
+                      kubectl -n ticketml rollout status deployment/ticket-classifier --timeout=5m

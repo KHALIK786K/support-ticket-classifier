@@ -1,0 +1,49 @@
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.Python
+build/
+dist/
+
+# --- Virtual envs ----------------------------------------------------------
+.venv/
+venv/
+env/
+
+# --- IDEs ------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# --- Tests / coverage ------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Local config ----------------------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# --- Data + Models (large, regenerable) ------------------------------------
+data/raw/*.csv
+data/processed/*
+models/*.pkl
+models/*.joblib
+models/metrics.json
+!models/.gitkeep
+!data/raw/.gitkeep
+
+# --- Jupyter ---------------------------------------------------------------
+.ipynb_checkpoints/
+
+# --- Docker ----------------------------------------------------------------
+*.log
